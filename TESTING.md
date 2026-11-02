@@ -55,11 +55,11 @@ python3 scripts/pack_plugin.py --target pi --output /tmp/egm-pi-package
 ```
 
 The command writes `/tmp/egm-pi-package/egm-pi/` and `egm-pi.zip`. Use a new
-output directory for each build. The folder is the directory a maintainer
-inspects before any manual npm publication. This build does not publish the
-package or establish Pi workflow support. Publication steps are in
-[Publish the Pi package](docs/releases.md#publish-the-pi-package). Publish from
-the generated `egm-pi/` directory, never from the repository root or `pi-egm/`.
+output directory for each build. This build does not publish the package or
+establish Pi workflow support. To build the release ZIP without publishing it,
+run `scripts/package-release.sh v0.1.0 --build-only`.
+Publication steps are in
+[Publish the Pi sandbox package](docs/releases.md#publish-the-pi-sandbox-package).
 
 Shell scripts use LF line endings through `.gitattributes`, including when
 Git's `core.autocrlf` is enabled. CI runs this offline suite on Ubuntu and

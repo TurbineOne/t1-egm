@@ -48,37 +48,42 @@ scripts/pack_plugin.py --target pi --output /tmp/egm-pi-package` and inspect
 Exact installed-bundle verification remains tracked in
 [#60](https://github.com/google/elephant-goldfish-model/issues/60).
 
-## Publish the Pi package
+## Publish the Pi sandbox package
 
-Publish `@turbineone/t1-egm` manually from the generated `egm-pi/` directory.
-Do not run `npm publish` from the repository root or from `pi-egm/`. The root is
-not the package, and `pi-egm/package.json` is only the private test manifest.
-The release workflow does not publish to npm and must not receive an npm token.
+Publish the built Pi directory as a GitHub Release. `pi install` cannot
+download that asset. The sandbox downloads and unpacks it, then installs the
+local directory. Do not publish this package to npm.
 
 1. Run `pytest tests/unit` from the repository root and `npm test` from `pi-egm/`.
-2. Build a fresh package with `python3 scripts/pack_plugin.py --target pi
-   --output /tmp/egm-pi-package`, or extract the reviewed `egm-pi-VERSION.zip`.
-3. Inspect `/tmp/egm-pi-package/egm-pi/package.json`. Confirm the name is
-   `@turbineone/t1-egm`, the version equals `plugin.json`, and `dependencies` is
-   absent. Confirm `extensions/index.ts`, seven `skills/*/SKILL.md` files, nine
-   `agents/*.md` files, and five document standards are present.
-4. Confirm that the version has never been published. Do not reuse a version
+2. Commit the reviewed changes. The release script refuses a dirty worktree.
+3. Confirm `plugin.json` has the version being released. Do not reuse a version
    after changing a skill, persona, standard, or extension file.
-5. Authenticate with `npm login`, using an account that can publish the
-   `@turbineone` scope. Do not write the token into the repository.
-6. From the generated directory, preview and then publish:
+4. Publish the tag and release assets:
 
 ```sh
-cd /tmp/egm-pi-package/egm-pi
-npm publish --access restricted --dry-run
-npm publish --access restricted
+scripts/package-release.sh v0.1.0
 ```
 
-Use restricted access unless TurbineOne has explicitly approved a public
-package. After publication, install it in a clean Pi session with `pi install
-npm:@turbineone/t1-egm@<version>` and run `/skill:egm-brainstorm`,
-`/skill:egm-draft`, and `/skill:egm-review`. Record that result separately.
-Publication does not by itself establish Pi workflow support.
+The script calls `scripts/pack_plugin.py --target pi`, writes
+`dist/egm-pi.zip` and `dist/egm-pi.zip.sha256`, pushes an annotated tag, and
+uploads those two files with `gh release create`. There is one package. `pi-egm/`
+is its source directory in this repository; `egm-pi/` is the generated package
+inside the ZIP. Use `scripts/package-release.sh v0.1.0 --build-only` to inspect
+the artifact without tagging or uploading it.
+
+A sandbox installs a published tag by downloading the asset itself:
+
+```sh
+gh release download v0.1.0 --repo TurbineOne/t1-egm --pattern 'egm-pi.zip*'
+sha256sum -c egm-pi.zip.sha256
+mkdir -p /opt/t1-egm
+unzip egm-pi.zip -d /opt/t1-egm
+pi install /opt/t1-egm/egm-pi
+```
+
+After installation, run `/skill:egm-brainstorm`, `/skill:egm-draft`, and
+`/skill:egm-review`. Record that result separately. Publication does not by
+itself establish Pi workflow support.
 
 ## Verify downloads
 

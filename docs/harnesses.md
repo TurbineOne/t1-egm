@@ -17,10 +17,12 @@ text.
 | Codex | `codex plugin marketplace add google/elephant-goldfish-model && codex plugin add egm@egm` |
 | ChatGPT | Personal testing: Plugins > Add > Upload plugin archive; see [packaging](codex.md#chatgpt). Workspace import: Admin > Plugins > Add > Import marketplace, repo URL `https://github.com/google/elephant-goldfish-model`, path `.agents/plugins` |
 | omp | `omp plugin marketplace add google/elephant-goldfish-model && omp plugin install egm@egm` |
-| Pi | `pi install npm:@turbineone/t1-egm@<version>` |
+| Pi | Download the `egm-pi.zip` release asset, unpack it, then `pi install /opt/t1-egm/egm-pi` |
 
-The Pi command installs the TurbineOne package, not this source repository.
-`pi install git:github.com/TurbineOne/t1-egm` is not a supported installation.
+The Pi command installs the unpacked release asset, not this source repository.
+`pi install` cannot download the asset, and `pi install git:github.com/TurbineOne/t1-egm`
+is not a supported installation. See
+[Publish the Pi sandbox package](releases.md#publish-the-pi-sandbox-package).
 Pi does not register `agents/*.md` as named subagents. A Goldfish review spawns
 a general-purpose subagent and tells it to read the absolute persona path
 supplied by the package. Packaging does not establish that the Pi workflows

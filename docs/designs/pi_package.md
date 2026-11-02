@@ -29,8 +29,9 @@ issue and design-review gates.
 
 ## Goals
 
-- Publish an installable package:
-  `pi install npm:@turbineone/t1-egm@<version>`.
+- Publish the built Pi directory as a versioned GitHub Release asset. The
+  sandbox downloads and unpacks that asset, then installs the local directory
+  with `pi install /opt/t1-egm/egm-pi`.
 - Keep `skills/`, `agents/`, and `resources/` as the canonical source files.
   Downstream edits happen there, once.
 - Generate the published directory from an allowlist. Do not publish tests,
@@ -56,6 +57,9 @@ issue and design-review gates.
 - Do not copy personas into skill-local `references/` directories.
 - Do not publish automatically in the first implementation. Publication is a
   manual maintainer action after the generated directory has been inspected.
+- Do not require an npm organization, a private npm package, or CodeArtifact
+  for the sandbox install. Do not expect `pi install` to download a GitHub
+  Release asset itself.
 - Do not treat a successful package build as Pi support. Support means
   `/egm-brainstorm`, `/egm-draft`, and `/egm-review` have run end to end
   through the installed package. Until that run is recorded, the docs say
@@ -71,8 +75,8 @@ runtime.
 The existing `scripts/pack_plugin.py` already copies a host runtime from an
 allowlist and rejects symlinks and development files. The Pi target should
 reuse that boundary rather than invent a second one. The generated directory
-is what npm publishes. The source repository remains the place where skills
-and personas are edited.
+is what the release archive contains. The source repository remains the place
+where skills and personas are edited.
 
 ## Published layout
 
@@ -178,21 +182,38 @@ extension and `package.json`. It does not contain `.claude-plugin/`,
 `.codex-plugin/`, tests, `site/`, `.github/`, or `docs/designs/`.
 
 `scripts/prepare_release.py` includes the Pi archive in the checksum manifest.
-The ZIP is the inspectable artifact. npm publication is a separate manual
-step from the unpacked `egm-pi/` directory:
+The ZIP remains the inspectable local artifact. The sandbox distribution is a
+separate release asset containing the generated `egm-pi/` directory, not the
+source repository.
+
+A maintainer builds that asset from the existing packager, tags the reviewed
+commit, and publishes it with `gh release create`. The sandbox downloads the
+asset for that tag and verifies its checksum. `pi install` cannot download a
+GitHub Release asset. It accepts an npm package, a git repository, or a local
+path. The sandbox therefore unpacks the asset and passes the resulting
+directory to `pi install`. That records the path and loads the package without
+contacting npm. It also does not require `npm install`: the package has no
+runtime dependencies, and Pi supplies its peer dependencies.
 
 ```sh
-npm publish --access restricted
+gh release download v0.1.0 --repo TurbineOne/t1-egm --pattern egm-pi.zip
+sha256sum -c egm-pi.zip.sha256
+unzip egm-pi.zip -d /opt/t1-egm
+pi install /opt/t1-egm/egm-pi
 ```
 
-No npm token is added to the repository or to the release workflow in this
-work. A publish job can be added later, after one inspected manual publish.
+The release contains one archive. `pi-egm/` is the extension source directory
+in this repository. `pack_plugin.py` copies its code into the generated
+`egm-pi/` directory and writes `egm-pi.zip`. `scripts/package-release.sh`
+publishes that ZIP and its SHA-256. It does not create a second tarball or a
+second package. Do not publish the GitHub source
+tarball as the package: it contains the development tree and still requires
+the packager at install time. A `git:` install is also wrong here, because Pi
+clones the repository and expects the package at its root.
 
-The user-facing install command is:
-
-```sh
-pi install npm:@turbineone/t1-egm@<version>
-```
+npm publication is not part of this route. A restricted npm organization would
+cost money, and CodeArtifact would require a short-lived token during sandbox
+creation. Neither belongs in the non-interactive sandbox install.
 
 ## Tests
 
@@ -231,6 +252,31 @@ Step 5 does not run during implementation unless it is separately requested.
 Publication is not required to review the code.
 
 ## Change log
+
+### 2026-11-01 21:44 MST
+
+Replaced npm publication with a GitHub Release asset for sandbox installs.
+The sandbox must install the package non-interactively during creation, and
+this fork should not pay for a restricted npm organization.
+
+`pi install npm:@turbineone/t1-egm` delegates to the host npm registry. A
+private package therefore needs either an npm organization plan or another
+authenticated registry. CodeArtifact can host the package, but its
+authorization token expires and would have to be present during every sandbox
+build. Embedding that token in the install URL or repository is inappropriate.
+
+Pi's installer confirms the usable boundary. It accepts `npm:`, a git
+repository, or a local path. It does not download a GitHub Release asset, and
+`pi install git:github.com/TurbineOne/t1-egm` would clone the development tree
+instead of the built package. The sandbox therefore downloads and unpacks the
+release asset itself, then runs `pi install` on the unpacked `egm-pi/`
+directory. That records a local path and loads the package without npm
+authentication or `npm install`, since the package has no runtime dependencies.
+
+Publishing the generated directory as a release asset keeps the build in the
+reviewed release step. Cloning the source repository in every sandbox would
+download tests, docs, and the packager, and would repeat the build during
+sandbox creation. The release asset avoids both.
 
 ### 2026-11-01 20:18 MST
 
