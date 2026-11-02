@@ -54,7 +54,7 @@ def prepare(root: Path, tag: str, output: Path, commit: str) -> None:
         raise ValueError("Source commit must be a full Git SHA")
     output.mkdir(parents=True, exist_ok=False)
     checksums = []
-    for target in ("claude", "openai"):
+    for target in ("claude", "openai", "pi"):
         _, archive = build(root, target, output / "build")
         destination = output / f"egm-{target}-{version}.zip"
         archive.rename(destination)
@@ -65,8 +65,9 @@ def prepare(root: Path, tag: str, output: Path, commit: str) -> None:
         f"# EGM {version}\n\nDeclared source: `{commit}`\nTag: `{tag}`\n\n"
         "Local source identity is caller-supplied and is not verified by this script. "
         "Publish only workflow-built candidates after exact-artifact checks.\n\n"
-        "Runtime archives: Claude and OpenAI. Verify downloads with "
-        "`sha256sum -c SHA256SUMS`.\n\n"
+        "Runtime archives: Claude, OpenAI, and Pi. Verify downloads with "
+        "`sha256sum -c SHA256SUMS`. The Pi ZIP is the inspectable package "
+        "artifact; npm publication remains a separate manual step.\n\n"
         "For CI-built candidates, verify each ZIP with "
         "`gh attestation verify FILE --repo google/elephant-goldfish-model "
         "--signer-workflow google/elephant-goldfish-model/.github/workflows/release.yml "

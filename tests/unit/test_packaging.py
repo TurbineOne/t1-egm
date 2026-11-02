@@ -29,7 +29,7 @@ def source(tmp_path: Path) -> Path:
   shutil.copyfile(ROOT / ".github/PULL_REQUEST_TEMPLATE.md",
                   root / ".github/PULL_REQUEST_TEMPLATE.md")
   for name in ("skills", "agents", "resources", "docs", "assets",
-               ".claude-plugin", ".codex-plugin"):
+               ".claude-plugin", ".codex-plugin", "pi-egm"):
     shutil.copytree(ROOT / name, root / name)
   return root
 
@@ -347,6 +347,65 @@ def test_archive_claimed_after_preflight_is_not_overwritten(
   else:
     assert archive.read_bytes() == b"another build owns this file"
   assert not list(output.glob(".egm-*"))
+
+
+def test_pi_package_contains_runtime_without_development_files(
+    source: Path, tmp_path: Path,
+) -> None:
+  """The Pi target publishes shared resources and its own extension manifest."""
+  for name in ("site/font.woff2", "tests/secret.txt", "docs/designs/private.md",
+               ".github/workflows/a.yml", "pi-egm/package.json",
+               "pi-egm/index.test.ts"):
+    path = source / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("must not ship")
+  first, archive = build(source, "pi", tmp_path / "first")
+  _, repeated = build(source, "pi", tmp_path / "second")
+  assert archive.read_bytes() == repeated.read_bytes()
+  with zipfile.ZipFile(archive) as bundle:
+    names = set(bundle.namelist())
+    assert len([name for name in names if name.endswith("/SKILL.md")]) == 7
+    assert len([name for name in names if name.startswith("agents/")]) == 9
+    assert len([
+        name for name in names
+        if name.startswith("resources/document_standards/")
+    ]) == 5
+    assert "extensions/index.ts" in names
+    assert "package.json" in names
+    assert "pi-egm/index.ts" not in names
+    assert "pi-egm/package.json" not in names
+    assert ".claude-plugin/plugin.json" not in names
+    assert ".codex-plugin/plugin.json" not in names
+    assert not any(name.startswith(("tests/", "site/", "docs/designs/", ".github/"))
+                   for name in names)
+    manifest = json.loads(bundle.read("package.json"))
+    assert manifest["name"] == "@turbineone/t1-egm"
+    assert manifest["version"] == json.loads((source / "plugin.json").read_text())["version"]
+    assert manifest["repository"] == "https://github.com/TurbineOne/t1-egm"
+    assert "dependencies" not in manifest
+    assert bundle.read("extensions/index.ts") == (source / "pi-egm/index.ts").read_bytes()
+    for info in bundle.infolist():
+      assert info.date_time == (1980, 1, 1, 0, 0, 0)
+      assert info.external_attr >> 16 == 0o100644
+      assert bundle.read(info) == (first / info.filename).read_bytes()
+
+
+def test_pi_package_rejects_missing_extension(source: Path, tmp_path: Path) -> None:
+  (source / "pi-egm/index.ts").unlink()
+  output = tmp_path / "output"
+  with pytest.raises(ValueError, match="Missing required file: pi-egm/index.ts"):
+    build(source, "pi", output)
+  assert not output.exists()
+
+
+def test_pi_package_rejects_linked_extension(source: Path, tmp_path: Path) -> None:
+  extension = source / "pi-egm/index.ts"
+  outside = tmp_path / "outside.ts"
+  outside.write_text("outside")
+  extension.unlink()
+  extension.symlink_to(outside)
+  with pytest.raises(ValueError, match="Symlink"):
+    build(source, "pi", tmp_path / "output")
 
 
 def test_published_claude_runtime_is_current(tmp_path: Path) -> None:

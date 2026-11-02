@@ -23,7 +23,7 @@ paths, and report formats. Do not change published artifacts under the same tag.
    tag on the selected main commit. Never move an existing release tag.
 4. Run **Prepare draft release** from `main`, supplying that existing tag.
    The tagged commit must include the release scripts and pass unit tests.
-5. Review the draft's two runtime ZIPs, `SHA256SUMS`, and source commit.
+5. Review the draft's three runtime ZIPs, `SHA256SUMS`, and source commit.
    Verify both ZIP attestations as described below. Replace
    placeholder notes with changes, compatibility/migration details, and exact
    artifact host-verification evidence. Unverified hosts remain unverified.
@@ -38,16 +38,51 @@ For local preparation, use a fresh output directory:
 python scripts/prepare_release.py --tag v0.1.0 --commit "$(git rev-parse HEAD)" --output /tmp/egm-0.1.0-candidate
 ```
 
-The local command checks manifest versions and builds artifacts. It does not
-verify the caller-supplied source SHA, Git tag ancestry, or tests. Those checks
-belong to the workflow. Publish only workflow-built candidates after
-exact-artifact checks. Local builds remain diagnostic candidates.
+The local command checks manifest versions and builds the Claude, OpenAI, and
+Pi archives. It does not verify the caller-supplied source SHA, Git tag
+ancestry, or tests. Those checks belong to the workflow. Publish only
+workflow-built candidates after exact-artifact checks. Local builds remain
+diagnostic candidates. To build only the Pi package, run `python3
+scripts/pack_plugin.py --target pi --output /tmp/egm-pi-package` and inspect
+`/tmp/egm-pi-package/egm-pi`.
 Exact installed-bundle verification remains tracked in
 [#60](https://github.com/google/elephant-goldfish-model/issues/60).
 
+## Publish the Pi package
+
+Publish `@turbineone/t1-egm` manually from the generated `egm-pi/` directory.
+Do not run `npm publish` from the repository root or from `pi-egm/`. The root is
+not the package, and `pi-egm/package.json` is only the private test manifest.
+The release workflow does not publish to npm and must not receive an npm token.
+
+1. Run `pytest tests/unit` from the repository root and `npm test` from `pi-egm/`.
+2. Build a fresh package with `python3 scripts/pack_plugin.py --target pi
+   --output /tmp/egm-pi-package`, or extract the reviewed `egm-pi-VERSION.zip`.
+3. Inspect `/tmp/egm-pi-package/egm-pi/package.json`. Confirm the name is
+   `@turbineone/t1-egm`, the version equals `plugin.json`, and `dependencies` is
+   absent. Confirm `extensions/index.ts`, seven `skills/*/SKILL.md` files, nine
+   `agents/*.md` files, and five document standards are present.
+4. Confirm that the version has never been published. Do not reuse a version
+   after changing a skill, persona, standard, or extension file.
+5. Authenticate with `npm login`, using an account that can publish the
+   `@turbineone` scope. Do not write the token into the repository.
+6. From the generated directory, preview and then publish:
+
+```sh
+cd /tmp/egm-pi-package/egm-pi
+npm publish --access restricted --dry-run
+npm publish --access restricted
+```
+
+Use restricted access unless TurbineOne has explicitly approved a public
+package. After publication, install it in a clean Pi session with `pi install
+npm:@turbineone/t1-egm@<version>` and run `/skill:egm-brainstorm`,
+`/skill:egm-draft`, and `/skill:egm-review`. Record that result separately.
+Publication does not by itself establish Pi workflow support.
+
 ## Verify downloads
 
-Download both ZIPs and `SHA256SUMS` into one directory. With GitHub CLI installed,
+Download all three ZIPs and `SHA256SUMS` into one directory. With GitHub CLI installed,
 run these commands from that directory:
 
 ```sh

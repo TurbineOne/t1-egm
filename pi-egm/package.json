@@ -1,0 +1,14 @@
+{
+  "name": "t1-egm-extension-tests",
+  "private": true,
+  "description": "Development-only test manifest for pi-egm/index.ts. The packager writes the published package manifest and must not copy this file.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest --run"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*",
+    "vitest": "^3.2.4"
+  }
+}

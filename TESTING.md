@@ -47,6 +47,20 @@ Git for Windows and run the tests from Git Bash, or add its `bin` directory
 the environment with `python -m venv .venv`, then activate it with
 `.venv\Scripts\Activate.ps1` in PowerShell or `source .venv/Scripts/activate`
 in Git Bash. Install the test dependencies as described above.
+Build the Pi package separately when you want to inspect it without building
+the Claude and OpenAI archives:
+
+```bash
+python3 scripts/pack_plugin.py --target pi --output /tmp/egm-pi-package
+```
+
+The command writes `/tmp/egm-pi-package/egm-pi/` and `egm-pi.zip`. Use a new
+output directory for each build. The folder is the directory a maintainer
+inspects before any manual npm publication. This build does not publish the
+package or establish Pi workflow support. Publication steps are in
+[Publish the Pi package](docs/releases.md#publish-the-pi-package). Publish from
+the generated `egm-pi/` directory, never from the repository root or `pi-egm/`.
+
 Shell scripts use LF line endings through `.gitattributes`, including when
 Git's `core.autocrlf` is enabled. CI runs this offline suite on Ubuntu and
 Windows; this does not establish native host workflow support.
@@ -62,6 +76,19 @@ pytest tests/unit -v
 pytest tests/unit/test_frontmatter.py -v
 pytest tests/unit/test_link_integrity.py -v
 ```
+
+The Pi extension has a separate Node test suite. It tests path resolution and
+skill registration without running a model. From `pi-egm/`, install its
+development dependencies and run Vitest:
+
+```bash
+cd pi-egm
+npm install
+npm test
+```
+
+The `package.json` in that directory is private and is not published. The
+packager writes the published manifest.
 
 ---
 

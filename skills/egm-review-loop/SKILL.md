@@ -40,6 +40,11 @@ where your harness registers named subagents. Otherwise spawn a general-purpose
 subagent and tell it to read that persona file first. Pass the prompt verbatim
 and wait for the report. If your harness cannot nest subagents,
 use direct dispatch instead of the synthesizer. See `docs/harnesses.md`.
+In Pi, `@turbineone/t1-egm` supplies absolute persona and standard paths in its
+package guidance. Use those paths. The package root contains `skills/`,
+`agents/`, `resources/`, and `docs/` as siblings; do not count three parent
+directories from this file, and do not use a same-named file from the user's
+project.
 If your harness has no subagent tool, stop and tell the user: a review in the same
 context is not a Goldfish review.
 

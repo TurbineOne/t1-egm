@@ -6,6 +6,7 @@ operational guardrails.
 
 | Document | Author | Primary Component |
 | :------- | :----- | :---------------- |
+| [pi_package.md](pi_package.md)<br>Downstream plan for publishing this fork as the `@turbineone/t1-egm` Pi package. Not an upstream design approval. | TurbineOne | Pi packaging |
 | [skill_icons.md](skill_icons.md)<br>Canonical skill artwork shared by plugins, the README, and the website. | [@n3wth](https://github.com/n3wth) | Skill presentation |
 | [runtime_packaging.md](runtime_packaging.md)<br>Draft runtime package boundaries, permissions, and validation. | [@n3wth](https://github.com/n3wth) | Runtime packaging implementation (#136) |
 | [releases.md](releases.md)<br>Draft versioned archives, checksums, and manual release procedure. | [@n3wth](https://github.com/n3wth) | Release implementation (#137) |

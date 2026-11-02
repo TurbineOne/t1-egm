@@ -45,15 +45,24 @@ def test_prepare_exact_archives(release: dict, tmp_path: Path) -> None:
     commit = "a" * 40
     release["prepare"](ROOT, f"v{version}", destination, commit)
     sums = (destination / "SHA256SUMS").read_text().splitlines()
-    assert len(sums) == 2
+    assert len(sums) == 3
+    expected = {
+        f"egm-claude-{version}.zip",
+        f"egm-openai-{version}.zip",
+        f"egm-pi-{version}.zip",
+    }
     for line in sums:
         digest, name = line.split("  ")
-        assert name in {f"egm-claude-{version}.zip", f"egm-openai-{version}.zip"}
+        assert name in expected
         archive = destination / name
         assert hashlib.sha256(archive.read_bytes()).hexdigest() == digest
         with zipfile.ZipFile(archive) as bundle:
             assert bundle.testzip() is None
-            assert json.loads(bundle.read("plugin.json"))["version"] == version
+            if name.startswith("egm-pi-"):
+                assert json.loads(bundle.read("package.json"))["version"] == version
+                assert "extensions/index.ts" in bundle.namelist()
+            else:
+                assert json.loads(bundle.read("plugin.json"))["version"] == version
     notes = (destination / "RELEASE_NOTES.md").read_text()
     assert f"Declared source: `{commit}`" in notes
     assert "Local source identity is caller-supplied and is not verified by this script." in notes

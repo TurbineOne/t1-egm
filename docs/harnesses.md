@@ -17,6 +17,27 @@ text.
 | Codex | `codex plugin marketplace add google/elephant-goldfish-model && codex plugin add egm@egm` |
 | ChatGPT | Personal testing: Plugins > Add > Upload plugin archive; see [packaging](codex.md#chatgpt). Workspace import: Admin > Plugins > Add > Import marketplace, repo URL `https://github.com/google/elephant-goldfish-model`, path `.agents/plugins` |
 | omp | `omp plugin marketplace add google/elephant-goldfish-model && omp plugin install egm@egm` |
+| Pi | `pi install npm:@turbineone/t1-egm@<version>` |
+
+The Pi command installs the TurbineOne package, not this source repository.
+`pi install git:github.com/TurbineOne/t1-egm` is not a supported installation.
+Pi does not register `agents/*.md` as named subagents. A Goldfish review spawns
+a general-purpose subagent and tells it to read the absolute persona path
+supplied by the package. Packaging does not establish that the Pi workflows
+have run end to end.
+
+To inspect the package before publication, build it from the repository root:
+
+```sh
+python3 scripts/pack_plugin.py --target pi --output /tmp/egm-pi-package
+```
+
+Inspect `/tmp/egm-pi-package/egm-pi`. The release candidate command in
+[Versioned releases](releases.md) also builds `egm-pi-VERSION.zip`. Run
+`pytest tests/unit` and `npm test` in `pi-egm/` before accepting a candidate.
+See [Testing](../TESTING.md) for the environment setup. Follow
+[Publish the Pi package](releases.md#publish-the-pi-package) for the manual
+npm publication steps. Do not publish from the repository root.
 
 Install the whole plugin. Skill-only installers that copy `skills/` alone
 break EGM, because the skills read `agents/` and
@@ -68,6 +89,7 @@ while `agents/` contains reviewer personas. All hosts share the same `skills/`,
 | Codex | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json` | `skills` path | Not shipped; general-purpose subagent reads the persona file |
 | ChatGPT | `plugin.json`, `.codex-plugin/plugin.json`; `.agents/plugins/marketplace.json` for workspace import | `skills` path | Detect native tools in the current session; general-purpose agent reads the persona |
 | omp | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (Claude-compatible fallback) | `skills/` (default) | Personas from `agents/`/`.claude-plugin/agents/` register as native `task` agents |
+| Pi | Generated `package.json` in `@turbineone/t1-egm` | `skills/` discovered by the package extension | Not registered; general-purpose subagent reads the package path |
 
 Persona prompts live in `agents/`, the directory Antigravity
 scans for subagents. Each persona has `name` and `description` frontmatter, so
@@ -93,6 +115,7 @@ phrase to its own tool:
 | Codex | Native spawn/wait tools; inspect the available schema | No | Detect at runtime; direct dispatch fallback |
 | ChatGPT | Native spawn/wait tools when exposed by the current Work session | No | Detect at runtime; direct dispatch fallback |
 | omp | `task` tool | Yes | Yes |
+| Pi | `Agent` tool | No | Detect at runtime; direct dispatch fallback |
 
 Where a harness has no named persona, the skill spawns a general-purpose
 subagent and tells it to read `agents/<file>.md` first. If a harness cannot
